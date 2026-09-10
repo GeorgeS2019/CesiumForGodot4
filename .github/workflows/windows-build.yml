@@ -18,6 +18,13 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        submodules: recursive # FIX 1: Required for cesium-native dependencies
+
+    - name: Setup CMake # FIX 2: Ensures CMake is installed and in the PATH
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: 'latest'
 
     - name: Set up Python 3.8
       uses: actions/setup-python@v5
@@ -53,6 +60,13 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        submodules: recursive # FIX 1: Required for cesium-native dependencies
+
+    - name: Setup CMake # FIX 2: Ensures CMake is installed and in the PATH
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: 'latest'
 
     - name: Set up Python 3.8
       uses: actions/setup-python@v5
