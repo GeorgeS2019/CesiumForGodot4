@@ -9,6 +9,8 @@ on:
 
 env:
   GIT_LFS_SKIP_SMUDGE: "1"
+  # FIX: Tell ezvcpkg exactly where to look so it finds our patched version
+  EZVCPKG_BASE_DIR: ${{ github.workspace }}/.ezvcpkg
 
 jobs:
   double:
@@ -19,9 +21,9 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        submodules: recursive # FIX 1: Required for cesium-native dependencies
+        submodules: recursive
 
-    - name: Setup CMake # FIX 2: Ensures CMake is installed and in the PATH
+    - name: Setup CMake
       uses: jwlawson/actions-setup-cmake@v2
       with:
         cmake-version: 'latest'
@@ -39,6 +41,23 @@ jobs:
       with:
         vs-version: '17.7'
         include-optional: true
+
+    # FIX: Pre-fetch vcpkg and patch the dead MSYS2 mirrors to the archive server
+    - name: Pre-fetch and patch vcpkg MSYS2 mirrors
+      run: |
+        $VcpkgCommit = "dbe35ceb30c688bf72e952ab23778e009a578f18"
+        $VcpkgDir = "${{ github.workspace }}/.ezvcpkg/$VcpkgCommit"
+        
+        New-Item -ItemType Directory -Force -Path "${{ github.workspace }}/.ezvcpkg"
+        git clone https://github.com/microsoft/vcpkg.git $VcpkgDir
+        
+        Push-Location $VcpkgDir
+        git checkout $VcpkgCommit
+        
+        $ScriptPath = "scripts/cmake/vcpkg_acquire_msys.cmake"
+        (Get-Content $ScriptPath) -replace 'mirror\.msys2\.org', 'archive.msys2.org' -replace 'repo\.msys2\.org', 'archive.msys2.org' | Set-Content $ScriptPath
+        
+        Pop-Location
 
     - name: Build Extension (Double Precision Debug)
       run: scons platform=windows arch=x64 compileTarget=extension target=template_release buildCesium=true precision=double
@@ -61,9 +80,9 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        submodules: recursive # FIX 1: Required for cesium-native dependencies
+        submodules: recursive
 
-    - name: Setup CMake # FIX 2: Ensures CMake is installed and in the PATH
+    - name: Setup CMake
       uses: jwlawson/actions-setup-cmake@v2
       with:
         cmake-version: 'latest'
@@ -81,6 +100,23 @@ jobs:
       with:
         vs-version: '17.7'
         include-optional: true
+
+    # FIX: Apply the exact same patch for the single precision job
+    - name: Pre-fetch and patch vcpkg MSYS2 mirrors
+      run: |
+        $VcpkgCommit = "dbe35ceb30c688bf72e952ab23778e009a578f18"
+        $VcpkgDir = "${{ github.workspace }}/.ezvcpkg/$VcpkgCommit"
+        
+        New-Item -ItemType Directory -Force -Path "${{ github.workspace }}/.ezvcpkg"
+        git clone https://github.com/microsoft/vcpkg.git $VcpkgDir
+        
+        Push-Location $VcpkgDir
+        git checkout $VcpkgCommit
+        
+        $ScriptPath = "scripts/cmake/vcpkg_acquire_msys.cmake"
+        (Get-Content $ScriptPath) -replace 'mirror\.msys2\.org', 'archive.msys2.org' -replace 'repo\.msys2\.org', 'archive.msys2.org' | Set-Content $ScriptPath
+        
+        Pop-Location
 
     - name: Build Extension (Single Precision Debug)
       run: scons platform=windows arch=x64 compileTarget=extension target=template_release buildCesium=true
